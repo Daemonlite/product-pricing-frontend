@@ -37,10 +37,10 @@ export const fetchProducts = createAsyncThunk(
 
 export const createProduct = createAsyncThunk(
   'products/createProduct',
-  async ({ token, product }: { token: string; product: { name: string; category: number; cost_price: number; stock: number; sku: string } }, { rejectWithValue }) => {
+  async ({ token, products }: { token: string; products: { name: string; category: number; cost_price: number; stock: number; sku: string }[] }, { rejectWithValue }) => {
     try {
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || '';
-      const response = await axios.post(`${baseUrl}/products/products/`, product, {
+      const response = await axios.post(`${baseUrl}/products/products/`, products, {
         headers: {
           Authorization: token,
           'Content-Type': 'application/json',
@@ -50,7 +50,7 @@ export const createProduct = createAsyncThunk(
 
       return response.data;
     } catch (error: any) {
-      return rejectWithValue(error.response?.data?.info || 'Failed to create product');
+      return rejectWithValue(error.response?.data?.info || 'Failed to create products');
     }
   }
 );
@@ -119,7 +119,7 @@ const productsSlice = createSlice({
       })
       .addCase(createProduct.fulfilled, (state, action) => {
         state.loading = false;
-        state.products = [...state.products, action.payload];
+        state.products = [...state.products, ...action.payload.info];
       })
       .addCase(createProduct.rejected, (state, action) => {
         state.loading = false;

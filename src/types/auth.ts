@@ -87,7 +87,7 @@ export interface ShippingItem {
   quantity: number;
   shipping: number;
   updated_at: string;
-  unit_price: number
+  unit_price: string
 }
 
 export interface Shipping {

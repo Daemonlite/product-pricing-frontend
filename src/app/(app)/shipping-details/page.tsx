@@ -6,7 +6,6 @@ import {
   Plus,
   Edit,
   Trash2,
-  Calculator,
   Save,
   Upload,
   Clock,
@@ -26,14 +25,14 @@ import { Chip } from '@/components/ui/chip'
 import { Select } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAppSelector, useAppDispatch } from '@/store/hooks'
-import { fetchShippings, createShipping, updateShipping, deleteShipping, updateShippingState, confirmShipmentDelivered } from '@/store/slices/shippingsSlice'
+import { fetchShippings, createShipping, updateShipping, deleteShipping, confirmShipmentDelivered } from '@/store/slices/shippingsSlice'
 import { fetchProducts } from '@/store/slices/productsSlice'
 import { useAuth } from '@/context/AuthContext'
 import { useToast } from '@/hooks/useToast'
 import { Shipping } from '@/types/auth'
 
 // Setup logger for client-side logging
-const logger = console // Use console for client-side logging
+const logger = console
 
 type ProductItem = {
   name: string
@@ -70,13 +69,13 @@ const ShippingDetails: React.FC = () => {
     trackingNumber: '',
     carrier: '',
     status: 'pending',
-    products: [{ name: '', quantity: 0, unit_price: 0 }],
+    products: [{ name: '', quantity: 0, unit_price: '0.00' }],
   })
 
   const [productFormData, setProductFormData] = useState({
     name: '',
     quantity: 0,
-    unit_price: 0
+    unit_price: '0.00'
   })
 
   // Fetch shippings and products on component mount
@@ -100,7 +99,7 @@ const ShippingDetails: React.FC = () => {
     setShipments(shippings)
   }, [shippings])
 
-  // Calculate shipment status and days information
+  // Calculate shipment status and days
   const calculateShipmentStatus = (shipment: Shipping) => {
     const arrivalDate = new Date(shipment.arrival_date)
     const today = currentDate
@@ -160,9 +159,14 @@ const ShippingDetails: React.FC = () => {
 
 
   const handleAddProduct = () => {
+    const lastProduct = formData.products[formData.products.length - 1]
+    if (!lastProduct || lastProduct.name.trim() === '') {
+      // Don't add if the last product doesn't have a name
+      return
+    }
     setFormData({
       ...formData,
-      products: [...formData.products, { name: '', quantity: 0, unit_price: 0 }],
+      products: [...formData.products, { name: '', quantity: 0, unit_price: '0.00' }],
     })
   }
 
@@ -199,7 +203,7 @@ const ShippingDetails: React.FC = () => {
       return {
         product: product ? Number(product.id) : 0,
         quantity: p.quantity,
-        unit_price: p.unit_price
+        unit_price: parseFloat(p.unit_price).toFixed(2)
       }
     })
 
@@ -224,7 +228,7 @@ const ShippingDetails: React.FC = () => {
         trackingNumber: '',
         carrier: '',
         status: 'pending',
-        products: [{ name: '', quantity: 0, unit_price: 0 }],
+        products: [{ name: '', quantity: 0, unit_price: '0.00' }],
       })
     } catch (error: any) {
       showToast(error.response?.info || 'Failed to add shipment. Please try again.', 'error')
@@ -265,6 +269,7 @@ const ShippingDetails: React.FC = () => {
     try {
       await dispatch(deleteShipping({ token: user.token, uid: shipmentToDelete.uid })).unwrap()
       showToast('Shipment deleted successfully!', 'success')
+      dispatch(fetchShippings(user.token))
     } catch (error) {
       showToast('Failed to delete shipment. Please try again.', 'error')
       console.error('Error deleting shipping:', error)
@@ -280,32 +285,36 @@ const ShippingDetails: React.FC = () => {
 
     setUpdating(true)
 
+    // Find product IDs based on selected names
+    const items = formData.products.map(p => {
+      const product = products.find(prod => prod.name === p.name)
+      return {
+        product: product ? Number(product.id) : 0,
+        quantity: p.quantity,
+        unit_price: parseFloat(p.unit_price).toFixed(2)
+      }
+    })
+
     const updatedShipping = {
       name: formData.shipmentName,
       arrival_date: formData.arrivalDate,
       tracking_number: formData.trackingNumber,
       carrier: formData.carrier,
       status: formData.status,
+      items: items
     }
 
     try {
       const result = await dispatch(updateShipping({ token: user.token, uid: selectedShipment.uid, shipping: updatedShipping })).unwrap()
       showToast(result?.info || 'Shipment updated successfully', 'success')
       setShowEditModal(false)
+      dispatch(fetchShippings(user.token))
     } catch (error: any) {
       showToast(error.response?.info || 'Failed to update shipment. Please try again.', 'error')
       console.error('Error updating shipping:', error)
     } finally {
       setUpdating(false)
     }
-  }
-
-  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
   }
 
   const handleStatusChange = (value: string) => {
@@ -327,7 +336,7 @@ const ShippingDetails: React.FC = () => {
     const { name, value } = e.target
     setProductFormData((prev) => ({
       ...prev,
-      [name]: name === 'quantity' || name === 'unit_price' ? parseFloat(value) : value,
+      [name]: name === 'quantity' ? parseFloat(value) : name === 'unit_price' ? value : value,
     }))
   }
 
@@ -338,7 +347,7 @@ const ShippingDetails: React.FC = () => {
     const shipment = shipments.find(s => s.id === selectedShipmentId)
     if (!shipment) return
 
-    const updatedItems: { product: number; quantity: number; unit_price: number }[] = shipment.items.map((item) =>
+    const updatedItems: { product: number; quantity: number; unit_price: string }[] = shipment.items.map((item) =>
       item.product.name === selectedProduct.name ? { product: Number(item.product.id), quantity: productFormData.quantity, unit_price: productFormData.unit_price } : { product: Number(item.product.id), quantity: item.quantity, unit_price: item.unit_price }
     )
 
@@ -353,10 +362,11 @@ const ShippingDetails: React.FC = () => {
 
     try {
       await dispatch(updateShipping({ token: user.token, uid: shipment.uid, shipping: updatedShipping })).unwrap()
-      // Refetch shippings to ensure state is updated from server
+      // Refetch shippings
       dispatch(fetchShippings(user.token))
       showToast('Product quantity updated successfully!', 'success')
       setShowEditProductModal(false)
+      dispatch(fetchShippings(user.token))
     } catch (error) {
       showToast('Failed to update product quantity. Please try again.', 'error')
       console.error('Error updating product:', error)
@@ -443,7 +453,19 @@ const ShippingDetails: React.FC = () => {
               Import CSV
             </Button>
             <Button
-              onClick={() => setShowAddForm(!showAddForm)}
+              onClick={() => {
+                if (!showAddForm) {
+                  setFormData({
+                    shipmentName: '',
+                    arrivalDate: '',
+                    trackingNumber: '',
+                    carrier: '',
+                    status: 'pending',
+                    products: [{ name: '', quantity: 0, unit_price: '0.00' }],
+                  })
+                }
+                setShowAddForm(!showAddForm)
+              }}
               variant="primary"
             >
               <Plus className="mr-2 h-4 w-4" />
@@ -540,43 +562,45 @@ const ShippingDetails: React.FC = () => {
               </label>
               <div className="mt-2 space-y-3">
                 {formData.products.map((product, index) => (
-                  <div key={index} className="grid grid-cols-1 gap-4 md:grid-cols-3" style={{ animation: `fadeInUp 0.6s ease-out ${(index + 3) * 0.1}s both` }}>
-                    <Select
-                      label="Product"
-                      clearable
-                      placeholder="Select product"
-                      searchable
-                      value={product.name}
-                      onChange={(value) => handleProductChange(index, 'name', value as string)}
-                      required
-                      variant='filled'
-                      options={products.map(p => ({ value: p.name, label: p.name }))}
-                    />
-                    <Input
-                      label="Quantity"
-                      type="number"
-                      value={product.quantity}
-                      onChange={(e) =>
-                        handleProductChange(index, 'quantity', parseFloat(e.target.value) || 0)
-                      }
-                      placeholder="0"
-                      min="0"
-                      required
-                      variant='filled'
-                    />
-                    <Input
-                      label="Unit Price"
-                      type="number"
-                      value={product.unit_price}
-                      onChange={(e) =>
-                        handleProductChange(index, 'unit_price', parseFloat(e.target.value) || 0)
-                      }
-                      placeholder="0"
-                      min="0"
-                      required
-                      variant='filled'
-                    />
-                    <div className="flex items-center space-x-2">
+                  <div key={index} className="flex items-center gap-4" style={{ animation: `fadeInUp 0.6s ease-out ${(index + 3) * 0.1}s both` }}>
+                    <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-3 mt-6">
+                      <Select
+                        label="Product"
+                        clearable
+                        placeholder="Select product"
+                        searchable
+                        value={product.name}
+                        onChange={(value) => handleProductChange(index, 'name', value as string)}
+                        required
+                        variant='filled'
+                        options={products.map(p => ({ value: p.name, label: p.name }))}
+                      />
+                      <Input
+                        label="Quantity"
+                        type="number"
+                        value={product.quantity}
+                        onChange={(e) =>
+                          handleProductChange(index, 'quantity', parseFloat(e.target.value) || 0)
+                        }
+                        placeholder="0"
+                        min="0"
+                        required
+                        variant='filled'
+                      />
+                      <Input
+                        label="Unit Price"
+                        type="number"
+                        value={product.unit_price}
+                        onChange={(e) =>
+                          handleProductChange(index, 'unit_price', e.target.value)
+                        }
+                        placeholder="0"
+                        min="0"
+                        required
+                        variant='filled'
+                      />
+                    </div>
+                    <div className="flex items-center space-x-2 mt-6">
                       <Button
                         type="button"
                         onClick={() => handleRemoveProduct(index)}
@@ -844,10 +868,156 @@ const ShippingDetails: React.FC = () => {
         isOpen={showEditModal}
         onClose={() => setShowEditModal(false)}
         title="Edit Shipment"
-        size="xl"
+        size="4xl"
         color="info"
-        actions={[
-          <div key="edit-shipment-actions" className="flex justify-end space-x-3">
+      >
+        <form onSubmit={handleUpdateShipment}>
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+            <Input
+              label="Shipment Name"
+              type="text"
+              id="shipmentName"
+              value={formData.shipmentName}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  shipmentName: e.target.value,
+                })
+              }
+              placeholder="e.g., June 2023 Electronics"
+              required
+              variant='filled'
+            />
+            <DatePicker
+              label="Arrival Date"
+              id="arrivalDate"
+              mode="single"
+              placeholder="Select arrival date"
+              variant="filled"
+              defaultDate={formData.arrivalDate ? new Date(formData.arrivalDate) : undefined}
+              onChange={([selectedDate]) => {
+                setFormData({
+                  ...formData,
+                  arrivalDate: selectedDate ? selectedDate.toISOString().split('T')[0] : '',
+                })
+              }}
+            />
+            <Input
+              label="Tracking Number"
+              type="text"
+              id="trackingNumber"
+              value={formData.trackingNumber}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  trackingNumber: e.target.value,
+                })
+              }
+              placeholder="Enter tracking number"
+              required
+              variant='filled'
+            />
+            <Input
+              label="Carrier"
+              type="text"
+              id="carrier"
+              value={formData.carrier}
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  carrier: e.target.value,
+                })
+              }
+              placeholder="e.g., DHL, FedEx, UPS"
+              required
+              variant='filled'
+            />
+            <Select
+              label="Status"
+              clearable
+              placeholder="Select status"
+              value={formData.status}
+              onChange={(value) => handleStatusChange(value as string)}
+              required
+              variant='filled'
+              options={[
+                { value: 'pending', label: 'Pending' },
+                { value: 'processing', label: 'Processing' },
+                { value: 'delivered', label: 'Delivered' },
+              ]}
+            />
+          </div>
+          <div className="mt-6">
+            <label className="block text-sm font-medium text-foreground">
+              Products in Shipment
+            </label>
+            <div className="mt-6 space-y-3">
+              {formData.products.map((product, index) => (
+                <div key={index} className="flex items-center gap-4" style={{ animation: `fadeInUp 0.6s ease-out ${(index + 3) * 0.1}s both` }}>
+                  <div className="grid w-full grid-cols-1 gap-4 md:grid-cols-3">
+                    <Select
+                      label="Product"
+                      clearable
+                      placeholder="Select product"
+                      searchable
+                      value={product.name}
+                      onChange={(value) => handleProductChange(index, 'name', value as string)}
+                      required
+                      variant='filled'
+                      options={products.map(p => ({ value: p.name, label: p.name }))}
+                    />
+                    <Input
+                      label="Quantity"
+                      type="number"
+                      value={product.quantity}
+                      onChange={(e) =>
+                        handleProductChange(index, 'quantity', parseFloat(e.target.value) || 0)
+                      }
+                      placeholder="0"
+                      min="0"
+                      required
+                      variant='filled'
+                    />
+                    <Input
+                      label="Unit Price"
+                      type="number"
+                      value={product.unit_price}
+                      onChange={(e) =>
+                        handleProductChange(index, 'unit_price', e.target.value)
+                      }
+                      placeholder="0"
+                      min="0"
+                      required
+                      variant='filled'
+                    />
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      type="button"
+                      onClick={() => handleRemoveProduct(index)}
+                      variant="tonal"
+                      color={'error'}
+                      disabled={formData.products.length === 1}
+                      className="mt-6"
+                    >
+                      <Trash2 className="h-4 w-4 text-error" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              <Button
+                type="button"
+                onClick={handleAddProduct}
+                variant="tonal"
+                color={'info'}
+                className="mt-6"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Product
+              </Button>
+            </div>
+          </div>
+          <div className="mt-6 flex justify-end space-x-3">
             <Button
               type="button"
               onClick={() => setShowEditModal(false)}
@@ -855,75 +1025,9 @@ const ShippingDetails: React.FC = () => {
             >
               Cancel
             </Button>
-            <Button loading={updating} startIcon={<Save className="h-4 w-4" />} type="submit" form="edit-shipment-form" variant="primary">
+            <Button loading={updating} type="submit" variant="primary">
               Save Changes
             </Button>
-          </div>
-        ]}
-      >
-        <form id="edit-shipment-form" onSubmit={handleUpdateShipment}>
-          <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-            <div className="sm:col-span-6">
-              <Input
-                label="Shipment Name"
-                type="text"
-                name="shipmentName"
-                id="shipmentName"
-                value={formData.shipmentName}
-                onChange={handleFormChange}
-                required
-              />
-            </div>
-            <div className="sm:col-span-3">
-              <DatePicker
-                label="Arrival Date"
-                id="arrivalDate"
-                defaultDate={formData.arrivalDate ? new Date(formData.arrivalDate) : undefined}
-                onChange={([selectedDate]) => {
-                  setFormData({
-                    ...formData,
-                    arrivalDate: selectedDate ? selectedDate.toISOString().split('T')[0] : '',
-                  })
-                }}
-              />
-            </div>
-            <div className="sm:col-span-3">
-              <Select
-                label="Status"
-                clearable
-                placeholder="Select status"
-                value={formData.status}
-                onChange={(value) => handleStatusChange(value as string)}
-                required
-                options={[
-                  { value: 'pending', label: 'Pending' },
-                  { value: 'processing', label: 'Processing' },
-                  { value: 'delivered', label: 'Delivered' },
-                ]}
-              />
-            </div>
-            <div className="sm:col-span-3">
-              <Input
-                label="Tracking Number"
-                type="text"
-                name="trackingNumber"
-                id="trackingNumber"
-                value={formData.trackingNumber}
-                onChange={handleFormChange}
-                required
-              />
-            </div>
-            <div className="sm:col-span-3">
-              <Input
-                label="Carrier"
-                type="text"
-                name="carrier"
-                id="carrier"
-                value={formData.carrier}
-                onChange={handleFormChange}
-                required
-              />
-            </div>
           </div>
         </form>
       </Dialog>

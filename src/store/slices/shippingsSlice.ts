@@ -37,7 +37,7 @@ export const fetchShippings = createAsyncThunk(
 
 export const createShipping = createAsyncThunk(
   'shippings/createShipping',
-  async ({ token, shipping }: { token: string; shipping: { name: string; arrival_date: string; tracking_number: string; carrier: string; items: { product: number; quantity: number, unit_price: number }[] } }, { rejectWithValue }) => {
+  async ({ token, shipping }: { token: string; shipping: { name: string; arrival_date: string; tracking_number: string; carrier: string; items: { product: number; quantity: number, unit_price: string }[] } }, { rejectWithValue }) => {
     try {
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || '';
       const response = await axios.post(`${baseUrl}/shipping/shippings/`, shipping, {
@@ -57,7 +57,7 @@ export const createShipping = createAsyncThunk(
 
 export const updateShipping = createAsyncThunk(
   'shippings/updateShipping',
-  async ({ token, uid, shipping }: { token: string; uid: string; shipping: Partial<{ name: string; arrival_date: string; tracking_number: string; carrier: string; status: string; items: { product: number; quantity: number, unit_price: number }[] }> }, { rejectWithValue }) => {
+  async ({ token, uid, shipping }: { token: string; uid: string; shipping: Partial<{ name: string; arrival_date: string; tracking_number: string; carrier: string; status: string; items: { product: number; quantity: number, unit_price: string }[] }> }, { rejectWithValue }) => {
     try {
       const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL || '';
       const response = await axios.patch(`${baseUrl}/shipping/shippings/${uid}/`, shipping, {

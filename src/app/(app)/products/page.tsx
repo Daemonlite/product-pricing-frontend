@@ -55,6 +55,9 @@ const ProductsPage: React.FC = () => {
     cost_price: 0,
     stock: 0,
   })
+  const [newProducts, setNewProducts] = useState<{ name: string; sku: string; category: string; cost_price: number; stock: number; }[]>([
+    { name: '', sku: '', category: '', cost_price: 0, stock: 0 }
+  ])
   const [isEditing, setIsEditing] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
@@ -146,39 +149,51 @@ const ProductsPage: React.FC = () => {
     }))
   }
 
+  const handleProductsInputChange = (index: number, e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target
+    setNewProducts(prev => prev.map((prod, i) => i === index ? {
+      ...prod,
+      [name]: name === 'cost_price' || name === 'stock' ? parseFloat(value) || 0 : value,
+    } : prod))
+  }
+
+  const addProductForm = () => {
+    setNewProducts(prev => [...prev, { name: '', sku: '', category: '', cost_price: 0, stock: 0 }])
+  }
+
+  const removeProductForm = (index: number) => {
+    if (newProducts.length > 1) {
+      setNewProducts(prev => prev.filter((_, i) => i !== index))
+    }
+  }
+
   const handleAddProduct = async (e: React.FormEvent) => {
     e.preventDefault()
     if (user?.token) {
       setIsSubmitting(true)
       try {
+        const productsToCreate = newProducts.map(prod => ({
+          name: prod.name,
+          sku: prod.sku,
+          category: parseInt(prod.category),
+          cost_price: prod.cost_price,
+          stock: prod.stock,
+        }))
         const result = await dispatch(createProduct({
           token: user.token,
-          product: {
-            name: newProduct.name,
-            sku: newProduct.sku,
-            category: parseInt(newProduct.category),
-            cost_price: newProduct.cost_price,
-            stock: newProduct.stock,
-          }
+          products: productsToCreate
         })).unwrap()
-        
-        showToast(result?.info || 'Product created successfully!', 'success')
-        
+
+        showToast(result?.info || 'Products created successfully!', 'success')
+
         // Refresh the products
         dispatch(fetchProducts(user.token))
-        
+
         setShowModal(false)
-        setNewProduct({
-          id: '',
-          name: '',
-          sku: '',
-          category: '',
-          cost_price: 0,
-          stock: 0,
-        })
+        setNewProducts([{ name: '', sku: '', category: '', cost_price: 0, stock: 0 }])
       } catch (error: any) {
-        console.error('Failed to create product:', error)
-        showToast(error || 'Failed to create product', 'error')
+        console.error('Failed to create products:', error)
+        showToast(error || 'Failed to create products', 'error')
       } finally {
         setIsSubmitting(false)
       }
@@ -332,6 +347,7 @@ const ProductsPage: React.FC = () => {
           cost_price: 0,
           stock: 0,
         })
+        setNewProducts([{ name: '', sku: '', category: '', cost_price: 0, stock: 0 }])
         setShowModal(true)
       }}>
         <Plus className="mr-2 h-4 w-4" />
@@ -426,6 +442,7 @@ const ProductsPage: React.FC = () => {
             cost_price: 0,
             stock: 0,
           })
+          setNewProducts([{ name: '', sku: '', category: '', cost_price: 0, stock: 0 }])
         }}
         title={isEditing ? "Edit Product" : "Add New Product"}
         size="3xl"
@@ -452,69 +469,160 @@ const ProductsPage: React.FC = () => {
           </>
         }
       >
-        <form onSubmit={isEditing ? handleUpdateProduct : handleAddProduct}>
-          <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
-            <div className="sm:col-span-3">
-              <Input
-                label="Product Name"
-                type="text"
-                name="name"
-                placeholder='e.g. "iPhone 13 Pro"'
-                value={newProduct.name}
-                onChange={handleInputChange}
-                required
-              />
+        {isEditing ? (
+          <form onSubmit={handleUpdateProduct}>
+            <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+              <div className="sm:col-span-3">
+                <Input
+                  label="Product Name"
+                  type="text"
+                  name="name"
+                  placeholder='e.g. "iPhone 13 Pro"'
+                  value={newProduct.name}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div className="sm:col-span-3">
+                <Input
+                  label="SKU"
+                  type="text"
+                  name="sku"
+                  placeholder='e.g. "IP13-PRO-256"'
+                  value={newProduct.sku}
+                  onChange={handleInputChange}
+                  required
+                />
+              </div>
+              <div className="sm:col-span-3">
+                <Select
+                  label="Category"
+                  clearable
+                  placeholder="Select category"
+                  options={categoryOptions}
+                  value={newProduct.category}
+                  onChange={(val) => setNewProduct(prev => ({ ...prev, category: val as string }))}
+                  required
+                />
+              </div>
+              <div className="sm:col-span-3">
+                <Input
+                  label="Stock"
+                  type="number"
+                  name="stock"
+                  placeholder='e.g. "10"'
+                  value={newProduct.stock.toString()}
+                  onChange={handleInputChange}
+                  required
+                  min="0"
+                  step={1}
+                />
+              </div>
+              <div className="sm:col-span-3">
+                <Input
+                  label="Cost Price (₵)"
+                  type="number"
+                  name="cost_price"
+                  placeholder='e.g. "1000"'
+                  value={newProduct.cost_price.toString()}
+                  onChange={handleInputChange}
+                  required
+                  min="0"
+                  step={0.01}
+                />
+              </div>
             </div>
-            <div className="sm:col-span-3">
-              <Input
-                label="SKU"
-                type="text"
-                name="sku"
-                placeholder='e.g. "IP13-PRO-256"'
-                value={newProduct.sku}
-                onChange={handleInputChange}
-                required
-              />
+          </form>
+        ) : (
+          <form onSubmit={handleAddProduct}>
+            <div className="space-y-6">
+              {newProducts.map((product, index) => (
+                <div key={index} className="border rounded-lg p-4">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-medium">Product {index + 1}</h3>
+                    {newProducts.length > 1 && (
+                      <Button
+                        variant="ghost"
+                        color="error"
+                        size="icon"
+                        onClick={() => removeProductForm(index)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
+                    <div className="sm:col-span-3">
+                      <Input
+                        label="Product Name"
+                        type="text"
+                        name="name"
+                        placeholder='e.g. "iPhone 13 Pro"'
+                        value={product.name}
+                        onChange={(e) => handleProductsInputChange(index, e)}
+                        required
+                      />
+                    </div>
+                    <div className="sm:col-span-3">
+                      <Input
+                        label="SKU"
+                        type="text"
+                        name="sku"
+                        placeholder='e.g. "IP13-PRO-256"'
+                        value={product.sku}
+                        onChange={(e) => handleProductsInputChange(index, e)}
+                        required
+                      />
+                    </div>
+                    <div className="sm:col-span-3">
+                      <Select
+                        label="Category"
+                        clearable
+                        placeholder="Select category"
+                        options={categoryOptions}
+                        value={product.category}
+                        onChange={(val) => setNewProducts(prev => prev.map((prod, i) => i === index ? { ...prod, category: val as string } : prod))}
+                        required
+                      />
+                    </div>
+                    <div className="sm:col-span-3">
+                      <Input
+                        label="Stock"
+                        type="number"
+                        name="stock"
+                        placeholder='e.g. "10"'
+                        value={product.stock.toString()}
+                        onChange={(e) => handleProductsInputChange(index, e)}
+                        required
+                        min="0"
+                        step={1}
+                      />
+                    </div>
+                    <div className="sm:col-span-3">
+                      <Input
+                        label="Cost Price (₵)"
+                        type="number"
+                        name="cost_price"
+                        placeholder='e.g. "1000"'
+                        value={product.cost_price.toString()}
+                        onChange={(e) => handleProductsInputChange(index, e)}
+                        required
+                        min="0"
+                        step={0.01}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+              <div className="flex justify-between">
+                <Button variant="outline" onClick={addProductForm}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  Add Another Product
+                </Button>
+              </div>
             </div>
-            <div className="sm:col-span-3">
-              <Select
-                label="Category"
-                clearable
-                placeholder="Select category"
-                options={categoryOptions}
-                value={newProduct.category}
-                onChange={(val) => setNewProduct(prev => ({ ...prev, category: val as string }))}
-                required
-              />
-            </div>
-            <div className="sm:col-span-3">
-              <Input
-                label="Stock"
-                type="number"
-                name="stock"
-                placeholder='e.g. "10"'
-                value={newProduct.stock.toString()}
-                onChange={handleInputChange}
-                required
-                min="0"
-                step={1}
-              />
-            </div>
-            <div className="sm:col-span-3">
-              <Input
-                label="Cost Price (₵)"
-                type="number"
-                name="cost_price"
-                placeholder='e.g. "1000"'
-                value={newProduct.cost_price.toString()}
-                onChange={handleInputChange}
-                required
-                min="0"
-                step={0.01}
-              />
-            </div>
-          </div>
-        </form>
+          </form>
+        )}
       </Dialog>
 
       <Dialog
