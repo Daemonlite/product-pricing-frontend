@@ -149,6 +149,10 @@ const ProductsPage: React.FC = () => {
     }))
   }
 
+  const handleExportProducts = () => {
+    window.print()
+  }
+
   const handleProductsInputChange = (index: number, e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setNewProducts(prev => prev.map((prod, i) => i === index ? {
@@ -298,17 +302,21 @@ const ProductsPage: React.FC = () => {
     }
   }
 
-  const categoryFilters = (
-    <div className="flex items-center gap-1">
+const categoryFilters = (
+  <div className="relative">
+    {/* Optional gradient overlay for visual cue */}
+    <div className="pointer-events-none absolute -right-4 top-0 z-10 h-full w-16 bg-gradient-to-l from-background to-transparent" />
+    
+    <div className="flex items-center gap-1 overflow-x-auto scroll-smooth py-2 px-1 -mx-1">
       <button
         key="All"
         style={{
           animation: `fadeInUp 0.6s ease-out 0s both`
         }}
         onClick={() => setSelectedCategory('All')}
-        className={`flex items-center text-base font-medium cursor-pointer rounded px-6 py-1 transition duration-300 ${selectedCategory === 'All' ? 'text-white bg-primary' : 'text-foreground hover:text-primary'}`}
+        className={`flex items-center text-base font-medium cursor-pointer rounded px-6 py-1 transition duration-300 whitespace-nowrap flex-shrink-0 ${selectedCategory === 'All' ? 'text-white bg-primary' : 'text-foreground hover:text-primary'}`}
       >
-        <Grid3X3 className="mr-1 h-4 w-4" />
+        <Grid3X3 className="mr-1 h-4 w-4 flex-shrink-0" />
         All
       </button>
       {categories.map((category, index) => (
@@ -318,22 +326,19 @@ const ProductsPage: React.FC = () => {
             animation: `fadeInUp 0.6s ease-out ${(index + 1) * 0.1}s both`
           }}
           onClick={() => setSelectedCategory(category.id.toString())}
-          className={`flex items-center text-base font-medium cursor-pointer rounded px-6 py-1 transition duration-300 ${selectedCategory === category.id.toString() ? 'text-white bg-primary' : 'text-foreground hover:text-primary'}`}
+          className={`flex items-center text-base font-medium cursor-pointer rounded px-6 py-1 transition duration-300 whitespace-nowrap flex-shrink-0 ${selectedCategory === category.id.toString() ? 'text-white bg-primary' : 'text-foreground hover:text-primary'}`}
         >
-          <Package className="mr-1 h-4 w-4" />
+          <Package className="mr-1 h-4 w-4 flex-shrink-0" />
           {category.name}
         </button>
       ))}
     </div>
-  )
+  </div>
+)
 
   const headerActions = (
     <div className="flex gap-4">
-      <Button variant="outline">
-        <Upload className="mr-2 h-4 w-4" />
-        Import
-      </Button>
-      <Button variant="outline">
+      <Button variant="outline" onClick={handleExportProducts}>
         <Download className="mr-2 h-4 w-4" />
         Export
       </Button>
