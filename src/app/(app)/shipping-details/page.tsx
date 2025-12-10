@@ -776,6 +776,31 @@ const ShippingDetails: React.FC = () => {
                   </Accordion.Trigger>
                   <Accordion.Content>
                     <div className="p-6 overflow-y-auto" style={{ maxHeight: '400px' }}>
+                      <div className="my-4 flex justify-end space-x-3">
+                        <Button
+                          startIcon={<CheckCheck className='w-4 h-4'/>}
+                          loading={confirming}
+                          onClick={() => handleArrived(shipment)}
+                          disabled={shipment.status === 'delivered'}
+                        >
+                          Arrived
+                        </Button>
+                        <Button
+                          onClick={() => handleEditShipment(shipment)}
+                          variant="outline"
+                          disabled={shipment.status === 'delivered'}
+                        >
+                          <Edit className="mr-2 h-4 w-4" />
+                          Edit
+                        </Button>
+                        <Button
+                          onClick={() => handleDeleteShipment(shipment)}
+                          variant="destructive"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete
+                        </Button>
+                      </div>
                       <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-3">
                         <div className="rounded-lg bg-muted p-4" style={{ animation: `fadeInUp 0.6s ease-out 0.5s both` }}>
                           <h4 className="mb-2 text-sm font-medium text-muted-foreground flex items-center gap-2">
@@ -818,6 +843,7 @@ const ShippingDetails: React.FC = () => {
                       <Table
                         data={products}
                         columns={productColumns}
+                        className='mb-4'
                         actions={(product) => (
                           <Button
                             variant="ghost"
@@ -829,31 +855,6 @@ const ShippingDetails: React.FC = () => {
                         )}
                         rowStyle={(item, index) => ({ animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both` })}
                       />
-                      <div className="mt-6 flex justify-end space-x-3">
-                        <Button
-                          startIcon={<CheckCheck className='w-4 h-4'/>}
-                          loading={confirming}
-                          onClick={() => handleArrived(shipment)}
-                          disabled={shipment.status === 'delivered'}
-                        >
-                          Arrived
-                        </Button>
-                        <Button
-                          onClick={() => handleEditShipment(shipment)}
-                          variant="outline"
-                          disabled={shipment.status === 'delivered'}
-                        >
-                          <Edit className="mr-2 h-4 w-4" />
-                          Edit
-                        </Button>
-                        <Button
-                          onClick={() => handleDeleteShipment(shipment)}
-                          variant="destructive"
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </Button>
-                      </div>
                     </div>
                   </Accordion.Content>
                 </Accordion.Item>
