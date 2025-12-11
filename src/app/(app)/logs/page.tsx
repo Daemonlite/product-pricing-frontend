@@ -164,20 +164,6 @@ const LogsPage: React.FC = () => {
             <p className="text-muted-foreground">View system activity and event history</p>
           </div>
         )}
-        {loading ? (
-          <Skeleton className="h-10 w-48 rounded-lg" />
-        ) : (
-          <div className="flex space-x-4">
-            <Button variant="outline">
-              <Download className="mr-2 h-4 w-4" />
-              Export
-            </Button>
-            <Button onClick={handleRefresh}>
-              <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
-          </div>
-        )}
       </div>
 
       <div className="flex space-x-2" style={{ animation: `fadeInUp 0.6s ease-out 0.1s both` }}>

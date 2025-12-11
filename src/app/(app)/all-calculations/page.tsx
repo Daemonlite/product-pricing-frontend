@@ -164,7 +164,7 @@ const AllCalculations: React.FC = () => {
         </div>
 
         {/* Actions */}
-        <div className="flex items-center space-x-2">
+        {/* <div className="flex items-center space-x-2">
           <DatePicker id='date' mode='range' placeholder='Select Date' onChange={(dates) => setDateRange(dates as [Date | null, Date | null])} />
           <Button variant="outline">
             <Download className="mr-2 h-4 w-4" />
@@ -174,7 +174,7 @@ const AllCalculations: React.FC = () => {
             <RefreshCw className="mr-2 h-4 w-4" />
             Refresh
           </Button>
-        </div>
+        </div> */}
       </div>
 
       {/* Table */}
