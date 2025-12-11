@@ -299,7 +299,7 @@ const ProductsPage: React.FC = () => {
   }
 
   const categoryFilters = (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-1 text-nowrap">
       <button
         key="All"
         style={{
@@ -329,14 +329,14 @@ const ProductsPage: React.FC = () => {
 
   const headerActions = (
     <div className="flex gap-4">
-      <Button variant="outline">
+      {/* <Button variant="outline">
         <Upload className="mr-2 h-4 w-4" />
         Import
       </Button>
       <Button variant="outline">
         <Download className="mr-2 h-4 w-4" />
         Export
-      </Button>
+      </Button> */}
       <Button onClick={() => {
         setIsEditing(false)
         setNewProduct({
@@ -393,7 +393,7 @@ const ProductsPage: React.FC = () => {
       </div>
 
       <div className="overflow-hidden rounded-lg bg-card" style={{ animation: `fadeInUp 0.6s ease-out 0.2s both` }}>
-        <div className="px-6 py-6">
+        <div className="px-6 py-6 scroll-auto overflow-x-auto w-[860px] no-scrollbar">
           {loading ? (
             <Skeleton className="h-10 w-full" />
           ) : (
@@ -424,6 +424,9 @@ const ProductsPage: React.FC = () => {
           />
         ) : (
           <div className="p-8 text-center">
+            <div className="flex justify-center mb-8">
+              <Package className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+            </div>
             <p className="text-muted-foreground">No products found. Add your first product to get started.</p>
           </div>
         )}
