@@ -24,6 +24,7 @@ import { Table } from '@/components/ui/table'
 import { Chip } from '@/components/ui/chip'
 import { Select } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Pagination } from '@/components/ui/pagination'
 import { useAppSelector, useAppDispatch } from '@/store/hooks'
 import { fetchShippings, createShipping, updateShipping, deleteShipping, confirmShipmentDelivered } from '@/store/slices/shippingsSlice'
 import { fetchProducts } from '@/store/slices/productsSlice'
@@ -47,6 +48,8 @@ const ShippingDetails: React.FC = () => {
   const { products } = useAppSelector((state) => state.products)
 
   const [shipments, setShipments] = useState<Shipping[]>([])
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(10)
 
   const [showAddForm, setShowAddForm] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
@@ -98,6 +101,11 @@ const ShippingDetails: React.FC = () => {
   useEffect(() => {
     setShipments(shippings)
   }, [shippings])
+
+  // Reset current page when shipments change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [shipments])
 
   // Calculate shipment status and days
   const calculateShipmentStatus = (shipment: Shipping) => {
@@ -418,6 +426,12 @@ const ShippingDetails: React.FC = () => {
     return 'text-warning'
   }
 
+  // Calculate paginated shipments
+  const totalPages = Math.ceil(shipments.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedShipments = shipments.slice(startIndex, endIndex)
+
   return (
     <div className="space-y-6">
       <div style={{ animation: `fadeInUp 0.6s ease-out 0s both` }}>
@@ -448,10 +462,10 @@ const ShippingDetails: React.FC = () => {
           <Skeleton className="h-10 w-32 rounded-lg" />
         ) : (
           <div className="flex items-center gap-4">
-            <Button variant="outline">
+            {/* <Button variant="outline">
               <Upload className="mr-2 h-4 w-4" />
               Import CSV
-            </Button>
+            </Button> */}
             <Button
               onClick={() => {
                 if (!showAddForm) {
@@ -729,7 +743,7 @@ const ShippingDetails: React.FC = () => {
           </div>
         ) : (
           <Accordion type="single" defaultValue="1">
-            {shipments.map((shipment, index) => {
+            {paginatedShipments.map((shipment, index) => {
               const { status, daysInfo, isOverdue, countdownText } = calculateShipmentStatus(shipment)
               const products = (shipment.items || []).map(item => ({ name: item.product.name, quantity: item.quantity, unit_price: item.unit_price }))
               const productColumns = [
@@ -861,6 +875,17 @@ const ShippingDetails: React.FC = () => {
               )
             })}
           </Accordion>
+        )}
+        {!loading && totalPages > 1 && (
+          <div className="mt-6 flex justify-center">
+            <Pagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              onPageChange={setCurrentPage}
+              itemsPerPage={itemsPerPage}
+              onItemsPerPageChange={setItemsPerPage}
+            />
+          </div>
         )}
       </div>
 

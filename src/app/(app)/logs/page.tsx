@@ -147,6 +147,9 @@ const LogsPage: React.FC = () => {
     {
       key: 'description' as keyof typeof logs[0],
       label: 'Details',
+      render: (value: any) => (
+        <div><pre className="whitespace-pre-wrap break-words text-sm text-foreground">{value}</pre></div>
+      ) 
     },
   ]
 

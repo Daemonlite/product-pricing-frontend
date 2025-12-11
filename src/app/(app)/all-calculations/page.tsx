@@ -180,7 +180,7 @@ const AllCalculations: React.FC = () => {
       {/* Table */}
       <div className="overflow-hidden rounded-lg bg-card" style={{ animation: `fadeInUp 0.6s ease-out 0.1s both` }}>
         <div className="px-6 py-6">
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 scroll-auto overflow-x-auto w-[860px] no-scrollbar">
             {loading ? (
               <div className="flex items-center gap-1">
                 {Array.from({ length: 5 }).map((_, index) => (
@@ -197,7 +197,7 @@ const AllCalculations: React.FC = () => {
                       animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both`
                     }}
                     onClick={() => setSelectedCategory(category)}
-                    className={`flex items-center text-base font-medium cursor-pointer rounded px-6 py-1 transition duration-300 ${selectedCategory === category ? 'text-white bg-primary' : 'text-foreground hover:text-primary'}`}
+                    className={`flex text-nowrap items-center text-base font-medium cursor-pointer rounded px-6 py-1 transition duration-300 ${selectedCategory === category ? 'text-white bg-primary' : 'text-foreground hover:text-primary'}`}
                   >
                     <Icon className="mr-1 h-4 w-4" />
                     {category}
