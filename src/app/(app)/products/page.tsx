@@ -35,6 +35,15 @@ import { useAuth } from '../../../hooks/useAuth'
 import { useToast } from '../../../hooks/useToast'
 import { Product } from '../../../types/auth'
 
+// Define interface for new product form
+interface NewProductForm {
+  name: string
+  sku: string
+  category: string
+  cost_price: number
+  stock: number
+}
+
 const ProductsPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>()
   const { user } = useAuth()
@@ -47,7 +56,14 @@ const ProductsPage: React.FC = () => {
   const [showModal, setShowModal] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deletingProduct, setDeletingProduct] = useState<{ id: string; name: string } | null>(null)
-  const [newProduct, setNewProduct] = useState({
+  const [newProduct, setNewProduct] = useState<{
+    id: string
+    name: string
+    sku: string
+    category: string
+    cost_price: number
+    stock: number
+  }>({
     id: '',
     name: '',
     sku: '',
@@ -55,7 +71,7 @@ const ProductsPage: React.FC = () => {
     cost_price: 0,
     stock: 0,
   })
-  const [newProducts, setNewProducts] = useState<{ name: string; sku: string; category: string; cost_price: number; stock: number; }[]>([
+  const [newProducts, setNewProducts] = useState<NewProductForm[]>([
     { name: '', sku: '', category: '', cost_price: 0, stock: 0 }
   ])
   const [isEditing, setIsEditing] = useState(false)
@@ -71,7 +87,7 @@ const ProductsPage: React.FC = () => {
 
   const categoryOptions = categories.map(cat => ({ value: cat.id.toString(), label: cat.name }))
 
-  // Catigory name
+  // Category name mapping
   const productsWithCategoryName = products.map(product => {
     try {
       let categoryId: string | number | undefined;
@@ -137,7 +153,11 @@ const ProductsPage: React.FC = () => {
       label: 'Cost Price',
       format: (val: number) => `₵${val ? val.toFixed(2) : '0.00'}`
     },
-    { key: 'selling_price', label: 'Selling Price', format: (val: number) => `₵${val ? val.toFixed(2) : '0.00'}`},
+    { 
+      key: 'selling_price', 
+      label: 'Selling Price', 
+      format: (val: number) => `₵${val ? val.toFixed(2) : '0.00'}`
+    },
     { key: 'stock', label: 'Stock', sortable: true },
   ]
 
@@ -197,7 +217,7 @@ const ProductsPage: React.FC = () => {
         setNewProducts([{ name: '', sku: '', category: '', cost_price: 0, stock: 0 }])
       } catch (error: any) {
         console.error('Failed to create products:', error)
-        showToast(error || 'Failed to create products', 'error')
+        showToast(error?.message || error || 'Failed to create products', 'error')
       } finally {
         setIsSubmitting(false)
       }
@@ -230,7 +250,7 @@ const ProductsPage: React.FC = () => {
 
   const handleUpdateProduct = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (user?.token) {
+    if (user?.token && newProduct.id) {
       setIsSubmitting(true)
       try {
         const result = await dispatch(updateProduct({
@@ -262,7 +282,7 @@ const ProductsPage: React.FC = () => {
         setIsEditing(false)
       } catch (error: any) {
         console.error('Failed to update product:', error)
-        showToast(error.response?.data?.detail || 'Failed to update product', 'error')
+        showToast(error?.message || error?.response?.data?.detail || 'Failed to update product', 'error')
       } finally {
         setIsSubmitting(false)
       }
@@ -302,8 +322,9 @@ const ProductsPage: React.FC = () => {
     }
   }
 
+  // Fixed: Removed extra closing div tag
   const categoryFilters = (
-    <div className="flex items-center gap-1 text-nowrap">
+    <div className="flex items-center gap-1 text-nowrap overflow-x-auto">
       <button
         key="All"
         style={{
@@ -329,19 +350,10 @@ const ProductsPage: React.FC = () => {
         </button>
       ))}
     </div>
-  </div>
-)
+  )
 
   const headerActions = (
     <div className="flex gap-4">
-      {/* <Button variant="outline">
-        <Upload className="mr-2 h-4 w-4" />
-        Import
-      </Button>
-      <Button variant="outline">
-        <Download className="mr-2 h-4 w-4" />
-        Export
-      </Button> */}
       <Button onClick={() => {
         setIsEditing(false)
         setNewProduct({
@@ -471,14 +483,20 @@ const ProductsPage: React.FC = () => {
             }}>
               Cancel
             </Button>
-            <Button startIcon={isEditing ? <Edit className="h-4 w-4" /> : <SaveIcon className="h-4 w-4" />} loading={isSubmitting} onClick={isEditing ? handleUpdateProduct : handleAddProduct} disabled={isSubmitting}>
+            <Button 
+              type={isEditing ? "button" : "submit"}
+              startIcon={isEditing ? <Edit className="h-4 w-4" /> : <SaveIcon className="h-4 w-4" />} 
+              loading={isSubmitting} 
+              onClick={isEditing ? handleUpdateProduct : undefined}
+              disabled={isSubmitting}
+            >
               {isEditing ? "Update Product" : "Add Product"}
             </Button>
           </>
         }
       >
         {isEditing ? (
-          <form onSubmit={handleUpdateProduct}>
+          <form onSubmit={handleUpdateProduct} id="edit-product-form">
             <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6">
               <div className="sm:col-span-3">
                 <Input
@@ -542,7 +560,7 @@ const ProductsPage: React.FC = () => {
             </div>
           </form>
         ) : (
-          <form onSubmit={handleAddProduct}>
+          <form onSubmit={handleAddProduct} id="add-product-form">
             <div className="space-y-6">
               {newProducts.map((product, index) => (
                 <div key={index} className="border rounded-lg p-4">
@@ -554,6 +572,7 @@ const ProductsPage: React.FC = () => {
                         color="error"
                         size="icon"
                         onClick={() => removeProductForm(index)}
+                        type="button"
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -623,7 +642,7 @@ const ProductsPage: React.FC = () => {
                 </div>
               ))}
               <div className="flex justify-between">
-                <Button variant="outline" onClick={addProductForm}>
+                <Button variant="outline" onClick={addProductForm} type="button">
                   <Plus className="mr-2 h-4 w-4" />
                   Add Another Product
                 </Button>
