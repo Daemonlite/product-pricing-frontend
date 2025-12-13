@@ -11,6 +11,10 @@ import {
   Package,
   RefreshCw,
   Eye,
+  ChevronDown,
+  ChevronRight,
+  Truck,
+  PackageCheck,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Table } from '@/components/ui/table'
@@ -22,21 +26,42 @@ import { getAllPricings } from '@/store/slices/pricingSlice'
 import { fetchCategories } from '@/store/slices/categoriesSlice'
 import { useAuth } from '@/hooks/useAuth'
 
-type Calculation = {
+type Product = {
   id: number
+  uid: string
   name: string
-  category: string
-  cost_price: number
-  selling_price: number
-  margin: number
+  category: {
+    id: number
+    uid: string
+    name: string
+  }
   profit: number
-  created_at: string
-  created_at_date: Date | null
-  other_costs: number
   stock: number
-  import_tax: number
-  shipping_cost: number
-  total_cost: number
+  cost_price: string
+  selling_price: string
+  sku: string | null
+  created_at: string
+  updated_at: string
+}
+
+type Shipping = {
+  id: number
+  uid: string
+  name: string
+}
+
+type PricingCalculation = {
+  id: number
+  uid: string
+  products: Product[]
+  shipping: Shipping
+  shipping_cost: string
+  import_tax: string
+  other_cost_type: 'percentage' | 'fixed'
+  other_costs: string
+  total_cost: string
+  created_at: string
+  updated_at: string
 }
 
 const AllCalculations: React.FC = () => {
@@ -46,13 +71,13 @@ const AllCalculations: React.FC = () => {
   const { categories: storeCategories } = useAppSelector((state) => state.categories)
 
   const [currentPage, setCurrentPage] = useState(1)
-  const [sortField, setSortField] = useState<keyof Calculation>('created_at')
+  const [sortField, setSortField] = useState<keyof TableRow>('created_at')
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc')
   const [selectedCategory, setSelectedCategory] = useState('All')
-  const [selectedCalculation, setSelectedCalculation] = useState<Calculation | null>(null)
+  const [selectedCalculation, setSelectedCalculation] = useState<PricingCalculation | null>(null)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null])
-  
+  const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set())
 
   useEffect(() => {
     if (user?.token) {
@@ -61,35 +86,76 @@ const AllCalculations: React.FC = () => {
     }
   }, [dispatch, user?.token])
 
-  console.log('all:', getAllPricings)
+  // Type for the table row
+  type TableRow = {
+    id: number
+    uid: string
+    shipping_name: string
+    products_count: number
+    import_tax: string
+    shipping_cost: string
+    other_costs: number
+    total_cost: string
+    created_at: string
+    created_at_date: Date | null
+    calculation: PricingCalculation
+  }
 
-  const columns: { key: keyof Calculation; label: string; sortable?: boolean; format?: (value: number) => string }[] = [
-    { key: 'created_at', label: 'Date', sortable: true },
-    { key: 'name', label: 'Product', sortable: true },
-    { key: 'category', label: 'Category' },
-    { key: 'cost_price', label: 'Cost Price', sortable: true, format: (value: number) => `₵${value}` },
-    { key: 'selling_price', label: 'Selling Price', sortable: true, format: (value: number) => `₵${value}` },
-    { key: 'margin', label: 'Margin', sortable: true, format: (value: number) => `${value.toFixed(1)}%` },
-    { key: 'stock', label: 'Quantity', sortable: true },
-    { key: 'profit', label: 'Profit', sortable: true, format: (value: number) => `₵${value}` },
+  const columns: { key: keyof TableRow; label: string; sortable?: boolean; format?: (value: any) => string }[] = [
+    { key: 'shipping_name', label: 'Shipping Name', sortable: true },
+    { key: 'products_count', label: 'Total Products', sortable: true },
+    { key: 'import_tax', label: 'Import Tax', sortable: true, format: (value: string) => `₵${parseFloat(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
+    { key: 'shipping_cost', label: 'Shipping Cost', sortable: true, format: (value: string) => `₵${parseFloat(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
+    { key: 'other_costs', label: 'Other Costs', sortable: true, format: (value: string) => `₵${parseFloat(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
+    { key: 'total_cost', label: 'Total Cost', sortable: true, format: (value: string) => `₵${parseFloat(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` },
   ]
 
-  const handleViewDetails = (item: Calculation) => {
-    setSelectedCalculation(item)
+  const handleViewDetails = (item: TableRow) => {
+    setSelectedCalculation(item.calculation)
+    console.log(`item.calculation`, item.calculation)
     setIsDialogOpen(true)
   }
 
+  const toggleRowExpansion = (id: number) => {
+    const newExpandedRows = new Set(expandedRows)
+    if (newExpandedRows.has(id)) {
+      newExpandedRows.delete(id)
+    } else {
+      newExpandedRows.add(id)
+    }
+    setExpandedRows(newExpandedRows)
+  }
 
 
-  const actions = (item: Calculation, index: number) => (
+  const formatOtherCost = (value: string, costType: 'percentage' | 'fixed') => {
+    if (costType === 'percentage') {
+      return `${value}%`
+    } else {
+      return `₵${parseFloat(value).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+  }
+
+  const actions = (item: TableRow, index: number) => (
     <div className="flex space-x-2">
-      <Button variant="ghost" color="info" size="sm" onClick={() => handleViewDetails(item)}>
+      <Button 
+        variant="ghost" 
+        size="sm" 
+        onClick={() => toggleRowExpansion(item.id)}
+        className="h-8 w-8 p-0"
+      >
+        {expandedRows.has(item.id) ? (
+          <ChevronDown className="h-4 w-4" />
+        ) : (
+          <ChevronRight className="h-4 w-4" />
+        )}
+      </Button>
+      <Button variant="ghost" size="sm" onClick={() => handleViewDetails(item)}>
         <Eye className="h-4 w-4" />
       </Button>
     </div>
   )
 
-  const onSort = (key: keyof Calculation) => {
+  const onSort = (key: keyof TableRow) => {
     if (key === sortField) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc')
     } else {
@@ -98,33 +164,55 @@ const AllCalculations: React.FC = () => {
     }
   }
 
-  // Transform API data
-  const dataToUse = pricings && pricings.length > 0 ? pricings.map((pricing: any) => {
-    const sellingPrice = pricing.products && pricing.products.length > 0 ? pricing.products[0].selling_price : 0;
-    const profit = pricing.products && pricing.products.length > 0 ? pricing.products[0].profit || 0 : 0;
-    const margin = sellingPrice > 0 ? (profit / sellingPrice) * 100 : 0;
-    const createdDate = pricing.created_at ? new Date(pricing.created_at) : null;
-    return {
-      id: pricing.id,
-      name: pricing.products && pricing.products.length > 0 ? pricing.products[0].name : 'Unknown Product',
-      category: pricing.products && pricing.products.length > 0 && pricing.products[0].category ? pricing.products[0].category.name : 'Unknown Category',
-      cost_price: pricing.products && pricing.products.length > 0 ? pricing.products[0].cost_price : 0,
-      selling_price: sellingPrice,
-      margin: margin,
-      profit: profit,
-      created_at: createdDate ? createdDate.toLocaleDateString() : 'N/A',
-      created_at_date: createdDate,
-      other_costs: pricing.other_costs || 0,
-      stock: pricing.products && pricing.products.length > 0 ? pricing.products[0].stock || 1 : 1,
-      import_tax: pricing.import_tax || 0,
-      shipping_cost: pricing.shipping_cost || 0,
-      total_cost: pricing.total_cost || 0,
-    };
-  }) : []
+  // Transform API data to calculations
+  const calculations: PricingCalculation[] = pricings && pricings.length > 0 
+    ? pricings.map((pricing: any) => ({
+        id: pricing.id,
+        uid: pricing.uid,
+        products: pricing.products || [],
+        shipping: pricing.shipping || { id: 0, uid: '', name: 'Unknown' },
+        shipping_cost: pricing.shipping_cost || "0.00",
+        import_tax: pricing.import_tax || "0.00",
+        other_cost_type: pricing.other_cost_type || 'fixed',
+        other_costs: pricing.other_costs || 0,
+        total_cost: pricing.total_cost || "0.00",
+        created_at: pricing.created_at,
+        updated_at: pricing.updated_at
+      }))
+    : []
 
-  // Get categories
+  // Transform for table display
+  const tableData: TableRow[] = calculations.map((calculation) => {
+    const createdDate = calculation.created_at ? new Date(calculation.created_at) : null;
+    return {
+      id: calculation.id,
+      uid: calculation.uid,
+      shipping_name: calculation.shipping?.name || 'Unknown',
+      products_count: calculation.products.length,
+      other_cost_type: calculation.other_cost_type,
+      import_tax: calculation.import_tax,
+      shipping_cost: calculation.shipping_cost,
+      total_cost: calculation.total_cost,
+      other_costs: calculation.other_costs,
+      created_at: createdDate ? createdDate.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric' 
+      }) : 'N/A',
+      created_at_date: createdDate,
+      calculation: calculation
+    }
+  })
+
+  // Get categories from products
+  const uniqueCategories = Array.from(
+    new Set(
+      calculations.flatMap(calculation => 
+        calculation.products.map(product => product.category?.name).filter(Boolean)
+      )
+    )
+  )
   const storeCategoryNames = storeCategories.map(cat => cat.name)
-  const uniqueCategories = Array.from(new Set(dataToUse.map(item => item.category)))
   const categories = ['All', ...(storeCategoryNames.length > 0 ? storeCategoryNames : uniqueCategories)]
 
   const categoryIcons = {
@@ -136,24 +224,21 @@ const AllCalculations: React.FC = () => {
     Accessories: Package,
   }
 
-  // Filter calculations by category, date range
-  const filteredCalculations = dataToUse
-    .filter((calc) => {
+  // Filter calculations by category
+  const filteredCalculations = tableData
+    .filter((row) => {
       if (selectedCategory === 'All') return true
-      return calc.category === selectedCategory
+      return row.calculation.products.some(product => product.category?.name === selectedCategory)
     })
-    .filter((calc) => {
+    .filter((row) => {
       if (!dateRange[0] || !dateRange[1]) return true
-      if (!calc.created_at_date) return false
-      return calc.created_at_date >= dateRange[0] && calc.created_at_date <= dateRange[1]
+      if (!row.created_at_date) return false
+      return row.created_at_date >= dateRange[0] && row.created_at_date <= dateRange[1]
     })
-
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between" style={{ animation: `fadeInUp 0.6s ease-out 0s both` }}>
-
-        {/* Page header */}
         <div>
           <h1 className="text-2xl font-bold">
             All Pricing Calculations
@@ -162,25 +247,28 @@ const AllCalculations: React.FC = () => {
             View and analyze all pricing calculations performed in the system
           </p>
         </div>
-
-        {/* Actions */}
         {/* <div className="flex items-center space-x-2">
-          <DatePicker id='date' mode='range' placeholder='Select Date' onChange={(dates) => setDateRange(dates as [Date | null, Date | null])} />
+          <DatePicker 
+            id='date' 
+            mode='range' 
+            placeholder='Select Date' 
+            onChange={(dates) => setDateRange(dates as [Date | null, Date | null])} 
+          />
           <Button variant="outline">
             <Download className="mr-2 h-4 w-4" />
             Export
           </Button>
-          <Button>
+          <Button onClick={() => user?.token && dispatch(getAllPricings(user.token))}>
             <RefreshCw className="mr-2 h-4 w-4" />
             Refresh
           </Button>
         </div> */}
       </div>
 
-      {/* Table */}
+      {/* Category Filter */}
       <div className="overflow-hidden rounded-lg bg-card" style={{ animation: `fadeInUp 0.6s ease-out 0.1s both` }}>
         <div className="px-6 py-6">
-          <div className="flex items-center gap-1 scroll-auto overflow-x-auto w-[860px] no-scrollbar">
+          <div className="flex items-center gap-1 scroll-auto overflow-x-auto w-full no-scrollbar">
             {loading ? (
               <div className="flex items-center gap-1">
                 {Array.from({ length: 5 }).map((_, index) => (
@@ -207,24 +295,147 @@ const AllCalculations: React.FC = () => {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Main Table */}
+      <div className="overflow-hidden rounded-lg bg-card border" style={{ animation: `fadeInUp 0.6s ease-out 0.2s both` }}>
         {loading ? (
-          <div className="space-y-4 p-4">
+          <div className="space-y-4 p-6">
             <Skeleton className="h-10 w-full rounded-lg" />
-            <Skeleton className="h-10 w-full rounded-lg" />
-            <Skeleton className="h-10 w-full rounded-lg" />
-            <Skeleton className="h-10 w-full rounded-lg" />
-            <Skeleton className="h-10 w-full rounded-lg" />
+            {Array.from({ length: 5 }).map((_, index) => (
+              <Skeleton key={index} className="h-16 w-full rounded-lg" />
+            ))}
           </div>
         ) : (
-          <Table searchable data={filteredCalculations} actions={actions} columns={columns} pagination={true} itemsPerPage={10} sortKey={sortField} sortDirection={sortDirection} onSort={onSort} currentPage={currentPage} onPageChange={setCurrentPage} rowStyle={(item, index) => ({ animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both` })} />
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b bg-muted/50">
+                  {columns.map((column) => (
+                    <th
+                      key={column.key}
+                      className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider"
+                    >
+                      {column.label}
+                    </th>
+                  ))}
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredCalculations.map((row, index) => (
+                  <React.Fragment key={row.id}>
+                    <tr 
+                      className={`border-b hover:bg-muted/50 ${index % 2 === 0 ? 'bg-card' : 'bg-muted/20'}`}
+                      style={{ animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both` }}
+                    >
+                      <td className="px-6 py-4">
+                        <div className="flex items-center">
+                          <Truck className="h-4 w-4 mr-2 text-muted-foreground" />
+                          {row.shipping_name}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 font-medium">
+                        {row.products_count}
+                      </td>
+                      <td className="px-6 py-4">
+                        {columns.find(c => c.key === 'import_tax')?.format?.(row.import_tax) || row.import_tax}
+                      </td>
+                      <td className="px-6 py-4">
+                        {columns.find(c => c.key === 'shipping_cost')?.format?.(row.shipping_cost) || row.shipping_cost}
+                      </td>
+                      <td className="px-6 py-4">
+                        {/* {columns.find(c => c.key === 'other_costs')?.format?.(row.other_costs) || row.other_costs} */}
+                        {formatOtherCost(row.other_costs, row.other_cost_type)}
+                      </td>
+                      <td className="px-6 py-4 font-semibold">
+                        {columns.find(c => c.key === 'total_cost')?.format?.(row.total_cost) || row.total_cost}
+                      </td>
+                      <td className="px-6 py-4">
+                        {actions(row, index)}
+                      </td>
+                    </tr>
+                    
+                    {/* Expanded Row with Products */}
+                    {expandedRows.has(row.id) && (
+                      <tr className="bg-muted/10">
+                        <td colSpan={6} className="px-6 py-4">
+                          <div className="space-y-4 pl-4 border-l-2 border-primary/20">
+                            <div className="bg-card rounded-lg p-4 border">
+                              <div className="flex items-center mb-4">
+                                <PackageCheck className="h-5 w-5 mr-2 text-primary" />
+                                <h3 className="font-semibold">Products in Calculation ({row.products_count})</h3>
+                              </div>
+                              <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                  <thead className="bg-muted/30">
+                                    <tr>
+                                      <th className="px-4 py-2 text-left">Product Name</th>
+                                      <th className="px-4 py-2 text-left">Category</th>
+                                      <th className="px-4 py-2 text-left">Cost Price</th>
+                                      <th className="px-4 py-2 text-left">Selling Price</th>
+                                      <th className="px-4 py-2 text-left">Profit</th>
+                                      <th className="px-4 py-2 text-left">Stock</th>
+                                    </tr>
+                                  </thead>
+                                  <tbody>
+                                    {row.calculation.products.map((product, idx) => (
+                                      <tr key={product.id} className={idx % 2 === 0 ? 'bg-card' : 'bg-muted/10'}>
+                                        <td className="px-4 py-2 font-medium">{product.name}</td>
+                                        <td className="px-4 py-2">
+                                          <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
+                                            {product.category?.name || 'Unknown'}
+                                          </span>
+                                        </td>
+                                        <td className="px-4 py-2">
+                                          ₵{parseFloat(product.cost_price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </td>
+                                        <td className="px-4 py-2">
+                                          ₵{parseFloat(product.selling_price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </td>
+                                        <td className="px-4 py-2 font-medium text-green-600">
+                                          ₵{product.profit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </td>
+                                        <td className="px-4 py-2">{product.stock}</td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                ))}
+                
+                {filteredCalculations.length === 0 && (
+                  <tr>
+                    <td colSpan={6} className="px-6 py-12 text-center">
+                      <div className="text-center py-8">
+                        <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                        <h3 className="text-lg font-medium mb-2">No calculations found</h3>
+                        <p className="text-muted-foreground">
+                          {selectedCategory !== 'All' ? `No calculations found for category "${selectedCategory}"` : 'No pricing calculations available'}
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
-      {/* Margin Summary */}
+      {/* Margin Summary (Keep original) */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {loading ? (
           <>
-            <div className="overflow-hidden rounded-lg bg-card" style={{ animation: `fadeInUp 0.6s ease-out 0.2s both` }}>
+            <div className="overflow-hidden rounded-lg bg-card" style={{ animation: `fadeInUp 0.6s ease-out 0.3s both` }}>
               <div className="border-b border-border bg-muted px-6 py-4">
                 <Skeleton className="h-6 w-32" />
               </div>
@@ -287,7 +498,7 @@ const AllCalculations: React.FC = () => {
           </>
         ) : (
           <>
-            <div className="overflow-hidden rounded-lg bg-card" style={{ animation: `fadeInUp 0.6s ease-out 0.2s both` }}>
+            <div className="overflow-hidden rounded-lg bg-card" style={{ animation: `fadeInUp 0.6s ease-out 0.3s both` }}>
               <div className="border-b border-border bg-muted px-6 py-4">
                 <h2 className="text-lg font-medium">
                   Margin Summary
@@ -295,51 +506,32 @@ const AllCalculations: React.FC = () => {
               </div>
               <div className="p-6">
                 <div className="space-y-4">
-                  {dataToUse.length > 0 ? (
+                  {calculations.length > 0 ? (
                     <>
                       <div>
                         <p className="text-sm font-medium">
-                          Average Margin
+                          Total Calculations
                         </p>
                         <p className="text-3xl font-semibold">
-                          {(
-                            dataToUse.reduce((acc, curr) => acc + curr.margin, 0) /
-                            dataToUse.length
-                          ).toFixed(1)}
-                          %
+                          {calculations.length}
                         </p>
                       </div>
-                      {(() => {
-                        const knownProducts = dataToUse.filter(item => item.name !== 'Unknown Product')
-                        const highest = knownProducts.length > 0 ? knownProducts.reduce(
-                          (max, curr) => (curr.margin > max.margin ? curr : max),
-                          knownProducts[0],
-                        ) : null
-                        const lowest = knownProducts.length > 0 ? knownProducts.reduce(
-                          (min, curr) => (curr.margin < min.margin ? curr : min),
-                          knownProducts[0],
-                        ) : null
-                        return (
-                          <>
-                            <div>
-                              <p className="text-sm font-medium">
-                                Highest Margin
-                              </p>
-                              <p className="text-lg font-medium">
-                                {highest ? `${highest.name} (${highest.margin.toFixed(1)}%)` : 'N/A'}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium">
-                                Lowest Margin
-                              </p>
-                              <p className="text-lg font-medium">
-                                {lowest ? `${lowest.name} (${lowest.margin.toFixed(1)}%)` : 'N/A'}
-                              </p>
-                            </div>
-                          </>
-                        )
-                      })()}
+                      <div>
+                        <p className="text-sm font-medium">
+                          Total Products
+                        </p>
+                        <p className="text-lg font-medium">
+                          {calculations.reduce((sum, calc) => sum + calc.products.length, 0)} items
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">
+                          Total Cost
+                        </p>
+                        <p className="text-lg font-medium">
+                          ₵{calculations.reduce((sum, calc) => sum + parseFloat(calc.total_cost), 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </p>
+                      </div>
                     </>
                   ) : (
                     <div className="text-center text-muted-foreground">
@@ -355,102 +547,78 @@ const AllCalculations: React.FC = () => {
             <div className="overflow-hidden rounded-lg bg-card" style={{ animation: `fadeInUp 0.6s ease-out 0.4s both` }}>
               <div className="border-b border-border bg-muted px-6 py-4">
                 <h2 className="text-lg font-medium">
-                  Margin Distribution
+                  Product Distribution
                 </h2>
               </div>
               <div className="p-6">
                 <div className="space-y-4">
-                  {[
-                    {
-                      range: 'Below 15%',
-                      count: dataToUse.filter((c) => c.margin < 15).length,
-                      color: 'bg-red-500',
-                    },
-                    {
-                      range: '15% - 20%',
-                      count: dataToUse.filter(
-                        (c) => c.margin >= 15 && c.margin < 20,
-                      ).length,
-                      color: 'bg-yellow-500',
-                    },
-                    {
-                      range: '20% - 25%',
-                      count: dataToUse.filter(
-                        (c) => c.margin >= 20 && c.margin < 25,
-                      ).length,
-                      color: 'bg-green-500',
-                    },
-                    {
-                      range: 'Above 25%',
-                      count: dataToUse.filter((c) => c.margin >= 25).length,
-                      color: 'bg-blue-500',
-                    },
-                  ].map((item, index) => (
-                    <div key={index} style={{ animation: `fadeInUp 0.6s ease-out ${(index + 3) * 0.1}s both` }}>
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">
-                          {item.range}
-                        </span>
-                        <span className="text-sm font-medium">
-                          {item.count} products
-                        </span>
-                      </div>
-                      <div className="mt-2 h-2 w-full rounded-full bg-muted">
-                        <div
-                          className={`h-2 rounded-full ${item.color}`}
-                          style={{
-                            width: `${(item.count / dataToUse.length) * 100}%`,
-                          }}
-                        ></div>
-                      </div>
-                    </div>
-                  ))}
+                  {(() => {
+                    const allProducts = calculations.flatMap(calc => calc.products)
+                    const categories = ['Electronics', 'Audio', 'Other']
+                    return categories.map((category, index) => {
+                      const count = allProducts.filter(p => {
+                        if (category === 'Electronics') return p.category?.name === 'Electronics'
+                        if (category === 'Audio') return p.category?.name === 'Audio'
+                        return p.category?.name !== 'Electronics' && p.category?.name !== 'Audio'
+                      }).length
+                      const colors = ['bg-blue-500', 'bg-green-500', 'bg-purple-500']
+                      return (
+                        <div key={index} style={{ animation: `fadeInUp 0.6s ease-out ${(index + 3) * 0.1}s both` }}>
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium">
+                              {category}
+                            </span>
+                            <span className="text-sm font-medium">
+                              {count} products
+                            </span>
+                          </div>
+                          <div className="mt-2 h-2 w-full rounded-full bg-muted">
+                            <div
+                              className={`h-2 rounded-full ${colors[index]}`}
+                              style={{
+                                width: `${(count / (allProducts.length || 1)) * 100}%`,
+                              }}
+                            ></div>
+                          </div>
+                        </div>
+                      )
+                    })
+                  })()}
                 </div>
               </div>
             </div>
 
-            {/* Category Analysis */}
+            {/* Shipping Cost Analysis */}
             <div className="overflow-hidden rounded-lg bg-card" style={{ animation: `fadeInUp 0.6s ease-out 0.5s both` }}>
               <div className="border-b border-border bg-muted px-6 py-4">
                 <h2 className="text-lg font-medium">
-                  Category Analysis
+                  Shipping Cost Analysis
                 </h2>
               </div>
               <div className="p-6">
-                <div className="space-y-4 overflow-y-auto" style={{ maxHeight: '12rem' }}>
-                  {(() => {
-                    const totalProducts = dataToUse.length
-                    return categories
-                      .filter((category) => category !== 'All')
-                      .map((category, index) => {
-                        const categoryCalculations = dataToUse.filter(
-                          (c) => c.category === category,
-                        )
-                        const share = (categoryCalculations.length / totalProducts) * 100
-                        return (
-                          <div
-                            key={category}
-                            style={{
-                              animation: `fadeInUp 0.6s ease-out ${(index + 4) * 0.1}s both`
-                            }}
-                            className="flex items-center justify-between rounded-lg border border-border p-4"
-                          >
-                            <div>
-                              <p className="font-medium">{category}</p>
-                              <p className="text-sm">
-                                {categoryCalculations.length} products
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-lg font-semibold">
-                                {share.toFixed(1)}%
-                              </p>
-                              <p className="text-sm">Product Share</p>
-                            </div>
-                          </div>
-                        )
-                      })
-                  })()}
+                <div className="space-y-4">
+                  <div>
+                    <p className="text-sm font-medium">
+                      Average Shipping Cost
+                    </p>
+                    <p className="text-lg font-medium">
+                      ₵ {calculations.length > 0 
+                        ? (calculations.reduce((sum, calc) => sum + parseFloat(calc.shipping_cost), 0) / calculations.length)
+                            .toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                        : '0.00'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">
+                      Average Import Tax
+                    </p>
+                    <p className="text-lg font-medium">
+                      ₵ {calculations.length > 0 
+                        ? (calculations.reduce((sum, calc) => sum + parseFloat(calc.import_tax), 0) / calculations.length)
+                            .toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+                        : '0.00'}
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
@@ -458,79 +626,116 @@ const AllCalculations: React.FC = () => {
         )}
       </div>
 
-      {/* Dialog for detailed view */}
+      {/* Dialog for Detailed View */}
       <Dialog
         isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
         title="Calculation Details"
-        size="lg"
+        size="3xl"
       >
         {selectedCalculation && (
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Product</p>
-                <p className="text-lg font-semibold">{selectedCalculation.name}</p>
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <div>
+                  <h4 className="text-sm font-medium text-muted-foreground mb-1">Shipping Name</h4>
+                  <div className="flex items-center">
+                    <Truck className="h-4 w-4 mr-2" />
+                    <p className="text-lg font-semibold">{selectedCalculation.shipping.name}</p>
+                  </div>
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-muted-foreground mb-1">Total Products</h4>
+                  <p className="text-lg font-semibold">{selectedCalculation.products.length}</p>
+                </div>
+                <div>
+                  <h4 className="text-sm font-medium text-muted-foreground mb-1">Calculation Date</h4>
+                  <p className="text-lg">
+                    {new Date(selectedCalculation.created_at).toLocaleDateString('en-US', { 
+                      year: 'numeric', 
+                      month: 'long', 
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Category</p>
-                <p className="text-lg font-semibold">{selectedCalculation.category}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Cost Price</p>
-                <p className="text-lg font-semibold">₵{selectedCalculation.cost_price}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Selling Price</p>
-                <p className="text-lg font-semibold">₵{selectedCalculation.selling_price}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Margin</p>
-                <p className="text-lg font-semibold">{selectedCalculation.margin.toFixed(1)}%</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Profit</p>
-                <p className="text-lg font-semibold">₵{selectedCalculation.profit}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Quantity</p>
-                <p className="text-lg font-semibold">{selectedCalculation.stock}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Date</p>
-                <p className="text-lg font-semibold">{selectedCalculation.created_at}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Others</p>
-                <p className="text-lg font-semibold">₵{selectedCalculation.other_costs}</p>
+              
+              <div className="space-y-4 bg-muted/20 p-4 rounded-lg">
+                <h4 className="font-semibold mb-3">Cost Breakdown</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span>Import Tax:</span>
+                    <span className="font-medium">₵{parseFloat(selectedCalculation.import_tax).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Shipping Cost:</span>
+                    <span className="font-medium">₵{parseFloat(selectedCalculation.shipping_cost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Other Costs:</span>
+                    <span className="font-medium">
+                      ₵{selectedCalculation.total_cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-800">
+                        {selectedCalculation.other_cost_type}
+                      </span>
+                    </span>
+                  </div>
+                  <div className="flex justify-between pt-2 border-t font-semibold text-lg">
+                    <span>Total Cost:</span>
+                    <span>₵{parseFloat(selectedCalculation.other_costs).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                </div>
               </div>
             </div>
-            <div className="pt-4 border-t">
-              <h3 className="text-lg font-semibold mb-2">Calculation Breakdown</h3>
-              <div className="space-y-2">
-                <div className="flex justify-between">
-                  <span>Total Cost (Cost Price + Others):</span>
-                  <span>₵{(Number(selectedCalculation.total_cost) + Number(selectedCalculation.other_costs)).toFixed(2)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Selling Price:</span>
-                  <span>₵{selectedCalculation.selling_price}</span>
-                </div>
-                <div className="flex justify-between font-semibold">
-                  <span>Profit:</span>
-                  <span>₵{selectedCalculation.profit}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Margin Percentage:</span>
-                  <span>{selectedCalculation.margin.toFixed(1)}%</span>
-                </div>
+
+            <div>
+              <h4 className="text-lg font-semibold mb-4">Products ({selectedCalculation.products.length})</h4>
+              <div className="overflow-x-auto rounded-lg border">
+                <table className="w-full">
+                  <thead className="bg-muted/50">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium uppercase">Product Name</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium uppercase">Category</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium uppercase">SKU</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium uppercase">Cost Price</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium uppercase">Selling Price</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium uppercase">Profit</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium uppercase">Stock</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedCalculation.products.map((product, index) => (
+                      <tr key={product.id} className={index % 2 === 0 ? 'bg-card' : 'bg-muted/10'}>
+                        <td className="px-4 py-3 font-medium">{product.name}</td>
+                        <td className="px-4 py-3">
+                          <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-800">
+                            {product.category?.name || 'Unknown'}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          {product.sku || <span className="text-muted-foreground text-sm">N/A</span>}
+                        </td>
+                        <td className="px-4 py-3">
+                        ₵{parseFloat(product.cost_price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                        <td className="px-4 py-3">
+                        ₵{parseFloat(product.selling_price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                        <td className="px-4 py-3 font-medium text-green-600">
+                         ₵ {product.profit.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </td>
+                        <td className="px-4 py-3">{product.stock}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
         )}
       </Dialog>
-
-
     </div>
   )
 }
