@@ -169,7 +169,7 @@ const ShippingDetails: React.FC = () => {
   const handleAddProduct = () => {
     const lastProduct = formData.products[formData.products.length - 1]
     if (!lastProduct || lastProduct.name.trim() === '') {
-      // Don't add if the last product doesn't have a name
+      showToast('Please enter a product name', 'info')
       return
     }
     setFormData({

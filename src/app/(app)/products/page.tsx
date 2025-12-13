@@ -324,7 +324,7 @@ const ProductsPage: React.FC = () => {
 
   // Fixed: Removed extra closing div tag
   const categoryFilters = (
-    <div className="flex items-center gap-1 text-nowrap overflow-x-auto">
+    <div className="flex items-center gap-1 text-nowrap overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
       <button
         key="All"
         style={{
@@ -410,7 +410,8 @@ const ProductsPage: React.FC = () => {
       </div>
 
       <div className="overflow-hidden rounded-lg bg-card" style={{ animation: `fadeInUp 0.6s ease-out 0.2s both` }}>
-        <div className="px-6 py-6 scroll-auto overflow-x-auto w-[860px] no-scrollbar">
+        
+        <div className="flex items-center gap-1 scroll-auto overflow-x-auto max-w-6xl mx-auto px-6 py-6">
           {loading ? (
             <Skeleton className="h-10 w-full" />
           ) : (

@@ -339,7 +339,7 @@ const AllCalculations: React.FC = () => {
         style={{ animation: `fadeInUp 0.6s ease-out 0.1s both` }}
       >
         <div className="px-6 py-6">
-          <div className="flex items-center gap-1 scroll-auto overflow-x-auto w-full no-scrollbar">
+          <div className="flex items-center gap-1 scroll-auto overflow-x-auto w-full no-scrollbar max-w-6xl mx-auto">
             {loading ? (
               <div className="flex items-center gap-1">
                 {Array.from({ length: 5 }).map((_, index) => (
@@ -388,7 +388,7 @@ const AllCalculations: React.FC = () => {
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full">
+            <table className="w-full text-nowrap">
               <thead>
                 <tr className="border-b bg-muted/50">
                   {columns.map((column) => (
@@ -461,7 +461,7 @@ const AllCalculations: React.FC = () => {
                                 </h3>
                               </div>
                               <div className="overflow-x-auto">
-                                <table className="w-full text-sm">
+                                <table className="w-full text-sm text-nowrap">
                                   <thead className="bg-muted/30">
                                     <tr>
                                       <th className="px-4 py-2 text-left">
@@ -831,10 +831,10 @@ const AllCalculations: React.FC = () => {
         isOpen={isDialogOpen}
         onClose={() => setIsDialogOpen(false)}
         title="Calculation Details"
-        size="3xl"
+        size="4xl"
       >
         {selectedCalculation && (
-          <div className="space-y-6">
+          <div className="space-y-6 text-nowrap">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-4">
                 <div>
