@@ -676,15 +676,13 @@ const AllCalculations: React.FC = () => {
                   <div className="flex justify-between">
                     <span>Other Costs:</span>
                     <span className="font-medium">
-                      ₵{selectedCalculation.total_cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-gray-100 text-gray-800">
-                        {selectedCalculation.other_cost_type}
-                      </span>
+                      {/* ₵{selectedCalculation.other_costs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} */}
+                      {formatOtherCost(selectedCalculation.other_costs,selectedCalculation.other_cost_type)}
                     </span>
                   </div>
                   <div className="flex justify-between pt-2 border-t font-semibold text-lg">
                     <span>Total Cost:</span>
-                    <span>₵{parseFloat(selectedCalculation.other_costs).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                    <span>₵{parseFloat(selectedCalculation.total_cost).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                   </div>
                 </div>
               </div>
