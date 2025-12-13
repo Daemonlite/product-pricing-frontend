@@ -147,6 +147,9 @@ const LogsPage: React.FC = () => {
     {
       key: 'description' as keyof typeof logs[0],
       label: 'Details',
+      render: (value: any) => (
+        <div><pre className="whitespace-pre-wrap break-words text-sm text-foreground">{value}</pre></div>
+      ) 
     },
   ]
 
@@ -159,20 +162,6 @@ const LogsPage: React.FC = () => {
           <div>
             <h1 className="text-2xl font-bold text-foreground">System Logs</h1>
             <p className="text-muted-foreground">View system activity and event history</p>
-          </div>
-        )}
-        {loading ? (
-          <Skeleton className="h-10 w-48 rounded-lg" />
-        ) : (
-          <div className="flex space-x-4">
-            <Button variant="outline">
-              <Download className="mr-2 h-4 w-4" />
-              Export
-            </Button>
-            <Button onClick={handleRefresh}>
-              <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
-            </Button>
           </div>
         )}
       </div>
