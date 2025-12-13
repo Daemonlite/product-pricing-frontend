@@ -47,7 +47,6 @@ const ProductsPage: React.FC = () => {
   const [showModal, setShowModal] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [deletingProduct, setDeletingProduct] = useState<{ id: string; name: string } | null>(null)
-  
   const [newProduct, setNewProduct] = useState({
     id: '',
     name: '',
