@@ -122,6 +122,7 @@ const NotificationsPage: React.FC = () => {
       emptyStateTitle="No notifications found"
       emptyStateDescription="Try adjusting your filter to find what you're looking for."
       rowStyle={(item, index) => ({ animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both` })}
+      className='text-nowrap'
     />
   )
 

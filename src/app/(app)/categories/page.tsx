@@ -285,6 +285,7 @@ const CategoriesPage: React.FC = () => {
             currentPage={currentPage}
             onPageChange={setCurrentPage}
             itemsPerPage={8}
+            className='text-nowrap'
           />
         )}
       </div>
