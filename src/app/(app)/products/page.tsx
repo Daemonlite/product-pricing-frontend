@@ -355,6 +355,7 @@ const ProductsPage: React.FC = () => {
   const headerActions = (
     <div className="flex gap-4">
       <Button onClick={() => {
+        console.log('newProduct', newProduct)
         setIsEditing(false)
         setNewProduct({
           id: '',
@@ -488,7 +489,7 @@ const ProductsPage: React.FC = () => {
               type={isEditing ? "button" : "submit"}
               startIcon={isEditing ? <Edit className="h-4 w-4" /> : <SaveIcon className="h-4 w-4" />} 
               loading={isSubmitting} 
-              onClick={isEditing ? handleUpdateProduct : undefined}
+              onClick={isEditing ? handleUpdateProduct : handleAddProduct}
               disabled={isSubmitting}
             >
               {isEditing ? "Update Product" : "Add Product"}
