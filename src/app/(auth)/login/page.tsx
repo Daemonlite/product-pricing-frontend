@@ -57,7 +57,7 @@ const LoginPage: React.FC = () => {
 
       <div className="w-full relative z-10 px-4">
         {/* Card container */}
-        <div className="rounded-2xl bg-card border border-border shadow-lg overflow-hidden w-[500px] mx-auto">
+        <div className="rounded-2xl bg-card border border-border shadow-lg overflow-hidden md:w-[500px] mx-auto">
           {/* Header gradient */}
           <div className="h-1 bg-gradient-to-r from-primary via-primary/50 to-transparent"></div>
 

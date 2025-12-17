@@ -9,7 +9,6 @@ interface Product {
   name: string
   cost_price: string
   selling_price: string
-  // ... other product fields
 }
 
 interface PricingCalculator {
@@ -118,44 +117,8 @@ const RecentProductsTable: React.FC<{ pricingCalculators?: PricingCalculator[] }
     },
   ]
 
-  // Alternative: If you need to use formatting functions, check your Table component's expected signature
-  const columnsWithFormat = [
-    { 
-      key: 'productsCount' as const, 
-      label: 'Products Count' 
-    },
-    { 
-      key: 'shippingCost' as const, 
-      label: 'Shipping Cost', 
-      format: (value: number | null) => value != null ? `₵${value.toFixed(2)}` : '—'
-    },
-    { 
-      key: 'importTax' as const, 
-      label: 'Import Tax', 
-      format: (value: number | null) => value != null ? `₵${value.toFixed(2)}` : '—'
-    },
-    {
-      key: 'otherCosts' as const,
-      label: 'Other Costs',
-      format: (value: number | null, row?: any) => {
-        if (value == null) return '—'
-        // Try to access row safely
-        const costType = row?.otherCostType
-        return costType === 'percentage' ? `${value}%` : `₵${value.toFixed(2)}`
-      }
-    },
-    { 
-      key: 'totalCost' as const, 
-      label: 'Total Cost', 
-      format: (value: number | null) => value != null ? `₵${value.toFixed(2)}` : '—'
-    },
-  ]
-
   // Use the simple approach first to avoid the error
-  return <Table data={preFormattedData} columns={simpleColumns} />
-  
-  // If the simple approach doesn't work, try the formatting approach with safe access
-  // return <Table data={normalized} columns={columnsWithFormat} />
+  return <Table className='text-nowrap' data={preFormattedData} columns={simpleColumns} />
 }
 
 export default RecentProductsTable

@@ -4,12 +4,10 @@ import React from 'react'
 import {
   Package,
   TrendingUp,
-  AlertTriangle,
   DollarSign,
   BarChart3,
   ArrowUpRight,
   ArrowDownRight,
-  TruckElectric,
   ShipIcon,
 } from 'lucide-react'
 // Import mock components instead of potentially API-dependent components
@@ -231,11 +229,11 @@ const Dashboard: React.FC<DashboardProps> = ({ data, loading }) => {
 
             {/* Competitor Comparison(Bar Chart) */}
             <div className="overflow-hidden card" style={{ animation: 'fadeInUp 0.6s ease-out 0.6s both' }}>
-              <div className="mb-4 flex items-center justify-between">
+              <div className="mb-4 md:flex items-center justify-between">
                 <h2 className="text-lg font-medium text-foreground">
                   Most Shipped Products Comparison
                 </h2>
-                <div className="flex items-center text-sm text-muted-foreground">
+                <div className="flex items-center text-sm text-muted-foreground mt-3 md:mt-0">
                   <BarChart3 className="mr-1 h-4 w-4" />
                   Top 5 products
                 </div>
@@ -264,7 +262,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, loading }) => {
         ) : (
           <>
             {/* Calculated Pricing */}
-            <div className="col-span-2 overflow-hidden" style={{ animation: 'fadeInUp 0.6s ease-out 0.7s both' }}>
+            <div className="lg:col-span-2 overflow-hidden" style={{ animation: 'fadeInUp 0.6s ease-out 0.7s both' }}>
               <RecentProductsTable
                 pricingCalculators={
                   (data?.pricing_calculators || [])

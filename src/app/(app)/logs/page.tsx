@@ -166,7 +166,7 @@ const LogsPage: React.FC = () => {
         )}
       </div>
 
-      <div className="flex space-x-2" style={{ animation: `fadeInUp 0.6s ease-out 0.1s both` }}>
+      <div className="flex space-x-2 text-nowrap overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]" style={{ animation: `fadeInUp 0.6s ease-out 0.1s both` }}>
         {logTypes.map((type, index) => (
           <Button
             key={type}

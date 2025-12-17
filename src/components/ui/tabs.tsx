@@ -26,7 +26,7 @@ export const Tabs: FC<TabsProps> = ({ tabs, defaultActiveId, onTabChange, varian
   };
 
   return (
-    <div>
+    <div className="text-nowrap overflow-x-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
       <div className={variant === 'filled' ? 'flex items-center space-x-2 bg-card border border-border rounded-lg p-1 w-fit' : `flex border-b w-fit ${variant === 'underline' ? 'border-border' : ''} bg-background`}>
         {tabs.map((tab) => (
           <button

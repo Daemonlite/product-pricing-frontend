@@ -755,7 +755,7 @@ const ShippingDetails: React.FC = () => {
               return (
                 <Accordion.Item key={index} value={shipment.id?.toString() || index.toString()}>
                   <Accordion.Trigger>
-                    <div className="flex items-center justify-between w-full" style={{ animation: `fadeInUp 0.6s ease-out ${(index + 4) * 0.1}s both` }}>
+                    <div className="md:flex items-center justify-between w-full" style={{ animation: `fadeInUp 0.6s ease-out ${(index + 4) * 0.1}s both` }}>
                       <div className="flex items-center">
                         <Ship className="mr-3 h-5 w-5 text-primary" />
                         <div>

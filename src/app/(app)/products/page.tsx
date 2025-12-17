@@ -440,6 +440,7 @@ const ProductsPage: React.FC = () => {
             onPageChange={setCurrentPage}
             itemsPerPage={8}
             rowStyle={(item, index) => ({ animation: `fadeInUp 0.6s ease-out ${index * 0.1}s both` })}
+            className='text-nowrap'
           />
         ) : (
           <div className="p-8 text-center">
